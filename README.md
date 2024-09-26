@@ -10,12 +10,12 @@ FairML.jl is a package developed for fair predictions. The package operates unde
 
 The package's core functionality is a function that unifies all stages into a single, user-friendly interface.
  
- ```
+```julia
 function fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, inprocess::Function, SF::Array{String}, preprocess::Function=id_pre,
                    postprocess::Function=ID_Post, c::Real=0.1, R::Int64=1, seed::Int64=42, SFpre::String, SFpost::String)
   return predictions
 end
- ```
+```
 
 ## Citing
 
