@@ -25,7 +25,7 @@ function me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, 
 end
 ```
 
-The complete documentation can be found in the paper [FairML: A Julia package for Fair Machine Learning](https://arxiv.org/pdf/2405.06433)
+The complete package documentation can be found in the paper [FairML: A Julia package for Fair Machine Learning](https://arxiv.org/pdf/2405.06433)
 
 
 
