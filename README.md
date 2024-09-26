@@ -2,7 +2,7 @@
 
 ## Citing
 
-
+![FairML](URL_da_Imagem)
 
 FairML.jl is a package developed for fair predictions. The package operates under a three-step framework:
 
@@ -10,10 +10,16 @@ FairML.jl is a package developed for fair predictions. The package operates unde
 2. In-Processing: This stage constitutes the main part of the paper, where optimization problems are addressed with the aim of improving a specific fairness metric.
 3. Post-processing: Following the previous stage, which outputs class membership probabilities, this phase is responsible for performing classification. It may or may not employ strategies to optimize a specific fairness metric in relation to accuracy.
 
-
-
-
 The package's core functionality is a function that unifies all stages into a single, user-friendly interface.
+ 
+ ```
+function fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, inprocess::Function, SF::Array{String}, preprocess::Function=id_pre,
+                   postprocess::Function=ID_Post, c::Real=0.1, R::Int64=1, seed::Int64=42, SFpre::String, SFpost::String)
+  return predictions
+end
+ ```
+
+
 
 If you use this project in your work, please cite it as follows:
 ```bibtex
