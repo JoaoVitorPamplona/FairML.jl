@@ -2,7 +2,7 @@
 
 ## Citing
 
-![FairML](URL_da_Imagem)
+![FairML]([URL_da_Imagem](https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.jpg))
 
 FairML.jl is a package developed for fair predictions. The package operates under a three-step framework:
 
