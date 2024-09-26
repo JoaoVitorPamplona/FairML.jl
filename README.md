@@ -20,7 +20,7 @@ end
 And for the mixed models we have:
 ```julia
 function me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, group_id_train::CategoricalVector, group_id_newdata::CategoricalVector,      
-                      inprocess::Function, SF::Union{String, Array{String}}, postprocess::Function=ID_Post, c::Real=0.1, SFpost::String)
+                      inprocess::Function, SF::Array{String}, postprocess::Function=ID_Post, c::Real=0.1, SFpost::String)
   return predictions
 end
 ```
