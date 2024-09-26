@@ -1,8 +1,6 @@
 # FairML.jl
 
-## Citing
-
-![FairML](https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.jpg)
+<img src="[caminho/da/imagem.png](https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.jpg)" alt="FairML" width="200"/>
 
 FairML.jl is a package developed for fair predictions. The package operates under a three-step framework:
 
@@ -19,7 +17,7 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, new
 end
  ```
 
-
+## Citing
 
 If you use this project in your work, please cite it as follows:
 ```bibtex
