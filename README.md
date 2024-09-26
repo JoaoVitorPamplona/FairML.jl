@@ -2,13 +2,13 @@
 
 <img src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png" width="200">
 
-FairML.jl is a package developed for fair predictions. The package operates under a three-step framework:
+FairML.jl is a package developed for fair predictions, in regular and in mixed models. The package operates under a three-step framework:
 
 1. Preprocessing: This stage encompasses the implementation of functions that perform initial data manipulation aimed at enhancing fairness metrics.
 2. In-Processing: This stage constitutes the main part of the paper, where optimization problems are addressed with the aim of improving a specific fairness metric.
 3. Post-processing: Following the previous stage, which outputs class membership probabilities, this phase is responsible for performing classification. It may or may not employ strategies to optimize a specific fairness metric in relation to accuracy.
 
-The package's core functionality is a function that unifies all stages into a single, user-friendly interface.
+The package's core functionality is a function that unifies all stages into a single, user-friendly interface. For the regular models we have:
  
 ```julia
 function fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, inprocess::Function, SF::Array{String}, preprocess::Function=id_pre,
@@ -16,6 +16,18 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, new
   return predictions
 end
 ```
+
+And for the mixed models we have:
+```julia
+function me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, group_id_train::CategoricalVector, group_id_newdata::CategoricalVector,      
+                      inprocess::Function, SF::Union{String, Array{String}}, postprocess::Function=ID_Post, c::Real=0.1, SFpost::String)
+  return predictions
+end
+```
+
+
+
+
 
 ## Citing
 
