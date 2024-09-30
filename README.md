@@ -1,9 +1,12 @@
 # FairML.jl
 
 <div style="display: flex; align-items: center;">
-  <img src="[URL_DA_IMAGEM](https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png)" style="width: 200px;"/>
+  <img src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png" width="200">
   <span style="font-size: 48px; margin-left: 20px;">FairML</span>
 </div>
+
+
+<img src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png" width="200">
 
 FairML.jl is a package developed for fair predictions, in regular and in mixed models. The package operates under a three-step framework:
 
