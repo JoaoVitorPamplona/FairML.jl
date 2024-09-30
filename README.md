@@ -1,6 +1,11 @@
-<a href="https://github.com/JoaoVitorPamplona/FairML.jl" style="text-decoration: none;">
-  <img width="150" style="float: left; margin-right: 10px;" src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png">
-</a>
+<div style="overflow: hidden;">
+  <a href="https://github.com/JoaoVitorPamplona/FairML.jl" style="text-decoration: none;">
+    <img width="150" style="float: left; margin-right: 10px;" src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png">
+  </a>
+  <p>
+    Aqui está o texto que ficará ao lado da imagem. Esse texto deve ser longo o suficiente para que ele flua ao redor da imagem, alinhando-se corretamente. Se precisar de mais texto para testes, você pode simplesmente replicar essa frase várias vezes.
+  </p>
+</div>
 
 # Welcome to FairML (Fair Machine Learning)
 
