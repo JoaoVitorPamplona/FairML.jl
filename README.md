@@ -1,6 +1,6 @@
-
-  <a href="https://github.com/JoaoVitorPamplona/FairML.jl"><img width="150" align='left' src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png"></a>
-
+<p>
+  <href="https://github.com/JoaoVitorPamplona/FairML.jl"><img width="150" align='left' src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png">
+</p>
 
 # Welcome to FairML (Fair Machine Learning) package
 
