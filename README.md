@@ -4,10 +4,6 @@
   <a href="https://github.com/JoaoVitorPamplona/FairML.jl"><img width="150" align='left' src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png"></a>
 </p>
 
-<p>
-  <img src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png" width="200">
-</p>
-
 # Welcome to Fair Machine Learning (FairML) package
 
 FairML.jl is a package developed for fair predictions, in regular and in mixed models. The package operates under a three-step framework:
