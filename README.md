@@ -1,6 +1,6 @@
 # FairML.jl
 
-<img src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML_Logo.png" width="600"> balbalbal
+<img src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png" width="600"> #FairML
 
 FairML.jl is a package developed for fair predictions, in regular and in mixed models. The package operates under a three-step framework:
 
