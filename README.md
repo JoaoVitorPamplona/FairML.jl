@@ -1,5 +1,5 @@
-<a href="https://github.com/JoaoVitorPamplona/FairML.jl">
-  <img width="150" align="left" src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png">
+<a href="https://github.com/JoaoVitorPamplona/FairML.jl" style="text-decoration: none;">
+  <img width="150" style="float: left; margin-right: 10px;" src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png">
 </a>
 
 # Welcome to FairML (Fair Machine Learning)
