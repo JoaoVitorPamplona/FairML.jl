@@ -1,7 +1,7 @@
 # FairML.jl
 
 <p>
-  <a <img src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png" width="200">/a>
+  <img src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png" width="200">
 </p>
 
 # Welcome to Fair Machine Learning (FairML) package!
