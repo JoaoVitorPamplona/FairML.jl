@@ -2,7 +2,7 @@
   <img width="150" align="left" src="https://github.com/JoaoVitorPamplona/FairML.jl/blob/main/FairML.png">
 </a>
 
-# Welcome to FairML (Fair Machine Learning) package
+# Welcome to FairML (Fair Machine Learning)
 
 FairML.jl is a Julia package designed for fair machine learning, focusing on both regular and mixed models. It employs optimization techniques to enhance fairness metrics, including disparate impact and disparate mistreatment.
 
