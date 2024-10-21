@@ -17,7 +17,7 @@ The package's core functionality is a function that unifies all stages into a si
 ```julia
 function fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame,
                   inprocess::Function, SF::Array{String}, preprocess::Function=id_pre,
-                  postprocess::Function=ID_Post, c::Real=0.1, R::Int64=1, seed::Int64=42,
+                  postprocess::Function=id_post, c::Real=0.1, R::Int64=1, seed::Int64=42,
                   SFpre::String, SFpost::String)
   return predictions
 end
@@ -27,7 +27,7 @@ And for mixed models we have:
 ```julia
 function me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame,
                       group_id_train::CategoricalVector, group_id_newdata::CategoricalVector,      
-                      inprocess::Function, SF::Array{String}, postprocess::Function=ID_Post,
+                      inprocess::Function, SF::Array{String}, postprocess::Function=id_post,
                       c::Real=0.1, SFpost::String)
   return predictions
 end
