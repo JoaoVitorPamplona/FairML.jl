@@ -2040,7 +2040,31 @@ end
 
 
 
-#Post-processing phase
+"""
+### Post-processing phase
+The post-processing phase of this package is an algorithm that seeks an optimal cut-off value for prediction considering the fair metrics that the user want.
+
+    predictions = postprocess(prob_train::Float64, prob_newdata::Float64, xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, SFpost::String)
+
+
+
+#### Input arguments
+
+* `prob_train`: The probability vector of the points being classified as positive, for the points in the training set;
+* `prob_newdata`: The probability vector of the points being classified as positive, for the points in the new data.
+* `xtrain`: The dataset that the labels are known (training set);
+* `ytrain`: The labels of the dataset `xtrain`;
+* `newdata`: The new dataset for which we want to obtain the `predictions`;
+* `SFpost`: One sensitive features (variable name), that will act in the post-processing phase, disabled by default.
+
+
+#### Output arguments
+
+* `predictions`: Classification of the `newdata` points.
+
+
+All possible post-processing phase options are below.
+"""
 function id_post(prob_train,prob_newdata,xtrain,ytrain,newdata,SFpost)  
     Prediction = zeros(length(prob_newdata))
     for i = 1 : length(prob_newdata)
