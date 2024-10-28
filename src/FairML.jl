@@ -286,13 +286,47 @@ end
 
 
 
-#Preprocessing phase
-function id_pre(xtrain, ytrain, newdata,SFpre,c,s)
+"""
+###Preprocessing phase
+    predictions = fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, inprocess::Function, 
+                            SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1, 
+                            R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
+
+
+
+#### Input arguments
+
+* `xtrain`: The dataset that the labels are known (training set);
+* `ytrain`: The labels of the dataset `xtrain`;
+* `newdata`: The new dataset for which we want to obtain the `predictions`;
+* `inprocess`: One of the several optimization problems availables in this package or any machine learning classification method present in MLJ.jl package;
+* `SF`: One or a set of sensitive features (variables names), that will act in the in-processing phase. 
+        If the algorithm come from the MLJ.jl package, no fair constraint are acting in this phase;
+* `group_id_train`: Training set group category;
+* `group_id_newdata`: New dataset group category;
+
+
+#### Optional argument
+
+* `preprocess`: A pre-processing function among the options available in this package, `id_pre()` by default;
+* `postprocess`: A post-processing function among the options available in this package, `id_post()` by default;
+* `c`: The threshold of the fair optimization problems, 0.1 by default;
+* `R`: Number of iterations of the preprocessing phase, each time sampling differently using the resampling method, 1 by default;
+* `seed`: For sample selection in `R`, 42 by default;
+* `SFpre`: One sensitive features (variable name), that will act in the preprocessing phase, disabled by default;
+* `SFpost`: One sensitive features (variable name), that will act in the post-processing phase, disabled by default.
+
+
+#### Output arguments
+
+* `predictions`: Classification of the `newdata` points.
+"""
+function id_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     return xtrain, ytrain, newdata
 end
 
 
-function di_pre(xtrain, ytrain, newdata,SFpre,c,s)
+function di_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     if c == 0
         c = 0.01
     end
@@ -311,10 +345,10 @@ function di_pre(xtrain, ytrain, newdata,SFpre,c,s)
     gb3 = gb12[1]
     gb4 = gb12[2]
 
-    selected_indices1 = sample(MersenneTwister(s), 1:nrow(gb1), mm, replace=true)
-    selected_indices2 = sample(MersenneTwister(s), 1:nrow(gb2), mm, replace=true)
-    selected_indices3 = sample(MersenneTwister(s), 1:nrow(gb3), mm, replace=true)
-    selected_indices4 = sample(MersenneTwister(s), 1:nrow(gb4), mm, replace=true)
+    selected_indices1 = sample(MersenneTwister(seed), 1:nrow(gb1), mm, replace=true)
+    selected_indices2 = sample(MersenneTwister(seed), 1:nrow(gb2), mm, replace=true)
+    selected_indices3 = sample(MersenneTwister(seed), 1:nrow(gb3), mm, replace=true)
+    selected_indices4 = sample(MersenneTwister(seed), 1:nrow(gb4), mm, replace=true)
 
     df_sampled1 = gb1[selected_indices1, :]
     df_sampled2 = gb2[selected_indices2, :]
@@ -322,7 +356,7 @@ function di_pre(xtrain, ytrain, newdata,SFpre,c,s)
     df_sampled4 = gb4[selected_indices4, :]
 
 
-    NewData = shuffle(MersenneTwister(s), vcat(df_sampled1, df_sampled2, df_sampled3, df_sampled4))
+    NewData = shuffle(MersenneTwister(seed), vcat(df_sampled1, df_sampled2, df_sampled3, df_sampled4))
     xtrainF = NewData[:,1:end-1]
     ytrainF = NewData[:,end]
     return xtrainF, ytrainF, newdata
