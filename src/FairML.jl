@@ -123,7 +123,7 @@ end
 
 
 """
-###Prediction functions 
+### Prediction functions 
 The package's core functionality, a functions that unifies preprocessing, in-processing and post-processing phases into a single, user-friendly interface.
 
 ### For regular models...
@@ -148,7 +148,7 @@ The package's core functionality, a functions that unifies preprocessing, in-pro
 * `SF`: One or a set of sensitive features (variables names), that will act in the in-processing phase. 
         If the algorithm come from the MLJ.jl package, no fair constraint are acting in this phase;
 * `group_id_train`: Training set group category;
-* `group_id_newdata`: New dataset group category;
+* `group_id_newdata`: New dataset group category.
 
 
 #### Optional argument
@@ -293,10 +293,10 @@ end
 
 
 """
-###Preprocessing phase
+### Preprocessing phase
 Functions that preprocess the data. The id_pre() function does not modify the data in any way and is used by default. The di_pre() function forces the data to be free of disparate impact.
 
-    xtrain, ytrain, newdata = preprocess(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, SFpre::String, c::Real, seed::Int64)
+    (xtrain, ytrain, newdata) = preprocess(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, SFpre::String, c::Real, seed::Int64)
 
 
 
@@ -305,26 +305,15 @@ Functions that preprocess the data. The id_pre() function does not modify the da
 * `xtrain`: The dataset that the labels are known (training set);
 * `ytrain`: The labels of the dataset `xtrain`;
 * `newdata`: The new dataset for which we want to obtain the `predictions`;
-* `SFpre`: One sensitive features (variable name), that will act in the preprocessing phase, disabled by default;
-* `c`: The threshold of the fair optimization problems, 0.1 by default;
-* `seed`: For sample selection, 42 by default;
-
-
-#### Optional argument
-
-* `preprocess`: A pre-processing function among the options available in this package, `id_pre()` by default;
-* `postprocess`: A post-processing function among the options available in this package, `id_post()` by default;
-* `c`: The threshold of the fair optimization problems, 0.1 by default;
-* `R`: Number of iterations of the preprocessing phase, each time sampling differently using the resampling method, 1 by default;
-* `seed`: For sample selection in `R`, 42 by default;
-* `SFpre`: One sensitive features (variable name), that will act in the preprocessing phase, disabled by default;
-* `SFpost`: One sensitive features (variable name), that will act in the post-processing phase, disabled by default.
+* `SFpre`: One sensitive features (variable name), that will act in the preprocessing phase;
+* `c`: The threshold of the fair optimization problems;
+* `seed`: For sample selection;
 
 
 #### Output arguments
 
-* `xtrain`: New training set, after the resampling method;
-* `ytrain`: New training set labels, after the resampling method;
+* `xtrain`: New training set, after the resampling method (when preprocessing diferent from id_pre());
+* `ytrain`: New training set labels, after the resampling method (when preprocessing diferent from id_pre());
 * `newdata`: It remains unchanged during the pre-processing phase;
 """
 function id_pre(xtrain, ytrain, newdata, SFpre, c, seed)
@@ -371,7 +360,39 @@ end
 
 
 
-#In-processing phase
+"""
+### In-processing phase
+The in-processing phase is where optimization problems are solved in a way that can mitigate the fair metrics that the user want.
+
+For regular models prediction...
+
+    (prob_train, prob_newdata) = inprocess(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, SF::Union{String, Array{String}}, c::Real)
+
+and for mixed models prediction
+
+    (prob_train, prob_newdata) = inprocess(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, SF::Union{String, Array{String}}, 
+                                           c::Real, group_id_train::CategoricalVector, group_id_newdata::CategoricalVector)
+
+
+#### Input arguments
+
+* `xtrain`: The dataset that the labels are known (training set);
+* `ytrain`: The labels of the dataset `xtrain`;
+* `newdata`: The new dataset for which we want to obtain the `predictions`;
+* `SF`: One sensitive features (variable name), that will act in the preprocessing phase, disabled by default;
+* `c`: The threshold of the fair optimization problems, 0.1 by default;
+* `group_id_train`: Training set group category;
+* `group_id_newdata`: New dataset group category.
+
+
+
+#### Output arguments
+
+* `prob_train`: The probability vector of the points being classified as positive, for the points in the training set;
+* `prob_newdata`: The probability vector of the points being classified as positive, for the points in the new data.
+
+All possible in-processing phase options are below.
+"""
 function id_logreg(xtrain, ytrain, newdata, SF, c)
     if any(xtrain[:, 1] .!= 1.0) && any(xtrain[:, end] .!= 1.0)
         insertcols!(xtrain, 1, :Intercept => ones(size(xtrain,1)))
