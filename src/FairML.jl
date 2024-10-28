@@ -45,8 +45,31 @@ export me_fair_pred
 
 
 
+"""
+###Data generator
+    (xtrain, ytrain, newdata, ynewdata) = create_data(num_points::Int64, split::Float64, 
+                                                      predictors::Array{Float64}, model::String, 
+                                                      nSF::Int64, seed::Int64)  
 
-#Data generator
+
+#### Input arguments
+
+* `num_points`: a linear operator that models a Hermitian positive definite matrix of dimension n;
+* `split`: Proportion of the dataset will be utilized as the training set. The complementary proportion will generate the test dataset;
+* `predictors`: The number of predictors in the model will correspond directly to the number of variables included in your dataset;
+* `model`: Linear or Logistic;
+* `nSF`: Number of sensitive features in the dataset;
+* `seed`: Random seed.
+
+
+#### Output arguments
+
+* `xtrain`: The dataset that the labels are known;
+* `ytrain`: The labels of the dataset `xtrain`;
+* `newdata`: A new dataset used for testing;
+* `ynewdata`: The labels of the dataset `newdata`.
+"""
+
 function create_data(num_points::Int64, split::Float64, predictors::Union{Vector{Int64},Vector{Float64}}, model::String, nSF::Int64, seed::Int64)
     SF = rand(MersenneTwister(seed), num_points, nSF) .< 0.5
     mean = zeros(length(predictors)-(nSF+1))
@@ -92,6 +115,174 @@ function create_data(num_points::Int64, split::Float64, predictors::Union{Vector
 
     return xtrain,ytrain,newdata,ynewdata
 end
+
+
+
+
+"""
+###Prediction functions for regular models...
+    predictions = fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, inprocess::Function, 
+                            SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1, 
+                            R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
+
+###and for mixed models
+    predictions = me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, group_id_train::CategoricalVector, 
+                               group_id_newdata::CategoricalVector, inprocess::Function, SF::Array{String}, postprocess::Function=id_post, 
+                               c::Real=0.1, SFpost::String="0")
+
+
+
+
+#### Input arguments
+
+* `xtrain`: The dataset that the labels are known (training set);
+* `ytrain`: The labels of the dataset `xtrain`;
+* `newdata`: The new dataset for which we want to obtain the `predictions`;
+* `inprocess`: One of the several optimization problems availables in this package or any machine learning classification method present in MLJ.jl package;
+* `SF`: One or a set of sensitive features (variables names), that will act in the in-processing phase. 
+        If the algorithm come from the MLJ.jl package, no fair constraint are acting in this phase;
+* `group_id_train`: Training set group category;
+* `group_id_newdata`: New dataset group category;
+
+
+#### Optional argument
+
+* `preprocess`: A pre-processing function among the options available in this package, `id_pre()` by default;
+* `postprocess`: A post-processing function among the options available in this package, `id_post()` by default;
+* `c`: The threshold of the fair optimization problems, 0.1 by default;
+* `R`: Number of iterations of the preprocessing phase, each time sampling differently using the resampling method, 1 by default;
+* `seed`: For sample selection in `R`, 42 by default;
+* `SFpre`: One sensitive features (variable name), that will act in the preprocessing phase, disabled by default;
+* `SFpost`: One sensitive features (variable name), that will act in the post-processing phase, disabled by default.
+
+
+#### Output arguments
+
+* `predictions`: Classification of the `newdata` points.
+"""
+function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inprocess, SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1,  R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SF])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SF])) == false
+        error("SF must have just 1 or 0 values.")
+    end
+    if all(x -> x == 0 || x == 1 || x == 1.0 || x == 0.0, ytrain) == false && all(x -> x == -1 || x == 1 || x == -1.0 || x == 1.0, ytrain) == false
+        error("ytrain must have just 1 and 0 values or 1 and -1 values.")
+    end
+    if SFpost == "0"
+        SFpost = SF
+    end
+    if SFpre == "0"
+        SFpre = SF
+    end
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpost])) == false
+        error("SFpost must have just 1 or 0 values.")
+    end
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpre])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpre])) == false
+        error("SFpre must have just 1 or 0 values.")
+    end
+    c = abs(c)
+    if R == 1
+        xtrain, ytrain, newdata = preprocess(xtrain, ytrain, newdata, SFpre, c, seed)
+        if isa(inprocess, Function) == false
+            ytrain = categorical([y == 1 ? 1 : 0 for y in ytrain])
+            model = inprocess
+            mach = machine(model, xtrain, ytrain)
+            MLJ.fit!(mach)
+            prob_train = MLJ.predict(mach, xtrain)
+            prob_newdata = MLJ.predict(mach, newdata)
+            if typeof(prob_train[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
+                prob_train =  broadcast(pdf, prob_train, 1)
+                prob_newdata =  broadcast(pdf, prob_newdata, 1)
+            else
+                prob_train = levelcode.(prob_train)
+                prob_newdata = levelcode.(prob_newdata)
+                prob_train = [y == 1 ? 1 : 0 for y in prob_train]
+                prob_newdata = [y == 1 ? 1 : 0 for y in prob_newdata]
+            end
+        else
+            prob_train,prob_newdata = inprocess(xtrain, ytrain, newdata, SF, c)
+        end
+        predictions = postprocess(prob_train,prob_newdata,xtrain,ytrain,newdata,SFpost)
+    else
+        DI_Metric1_old = 2
+        sed = abs.(rand(MersenneTwister(seed), Int, R))
+        for l = 1 : R
+            xtrain3, ytrain3, newdata3 = preprocess(xtrain, ytrain, newdata, SFpre, c, sed[l]) 
+            if isa(inprocess, Function) == false
+                ytrain3 = categorical([y == 1 ? 1 : 0 for y in ytrain3])
+                model = inprocess
+                mach = machine(model, xtrain3, ytrain3)
+                MLJ.fit!(mach)
+                prob_train3 = MLJ.predict(mach, xtrain3)
+                prob_train = MLJ.predict(mach, xtrain)
+                if typeof(prob_train3[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
+                    prob_train3 =  broadcast(pdf, prob_train3, 1)
+                    prob_train =  broadcast(pdf, prob_train, 1)
+                else
+                    prob_train3 = levelcode.(prob_train3)
+                    prob_train = levelcode.(prob_train)
+                    prob_train3 = [y == 1 ? 1 : 0 for y in prob_train3]
+                    prob_train = [y == 1 ? 1 : 0 for y in prob_train]
+                end
+            else
+                prob_train3, prob_train = inprocess(xtrain3, ytrain3, xtrain, SF, c)
+            end
+            predictions_Train = postprocess(prob_train3,prob_train,xtrain3,ytrain3,xtrain,SFpost)
+            #if isa(inprocess, Function) == false && any(xtrain3[:, 1] .== 1.0) && any(xtrain3[:, end] .== 1.0)
+            #    select!(xtrain3,Not([:Intercept]))
+            #end
+            DI_Metric1 = disparate_impact_metric(xtrain, predictions_Train, SFpre)
+            #if isa(inprocess, Function) == false && any(xtrain[:, 1] .== 1.0) && any(xtrain[:, end] .== 1.0)
+            #    select!(xtrain,Not([:Intercept]))
+            #end
+            if DI_Metric1 < DI_Metric1_old
+                DI_Metric1_old = copy(DI_Metric1)
+                if isa(inprocess, Function) == false
+                    ytrain3 = categorical([y == 1 ? 1 : 0 for y in ytrain3])
+                    model = inprocess
+                    mach = machine(model, xtrain3, ytrain3)
+                    MLJ.fit!(mach)
+                    prob_train = MLJ.predict(mach, xtrain3)
+                    prob_newdata = MLJ.predict(mach, newdata3)
+                    if typeof(prob_train[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
+                        prob_train =  broadcast(pdf, prob_train, 1)
+                        prob_newdata =  broadcast(pdf, prob_newdata, 1)
+                    else
+                        prob_train = levelcode.(prob_train)
+                        prob_newdata = levelcode.(prob_newdata)
+                        prob_train = [y == 1 ? 1 : 0 for y in prob_train]
+                        prob_newdata = [y == 1 ? 1 : 0 for y in prob_newdata]
+                    end
+                else
+                    prob_train,prob_newdata = inprocess(xtrain3, ytrain3, newdata3, SF, c)
+                end
+                predictions = postprocess(prob_train,prob_newdata,xtrain3,ytrain3,newdata3,SFpost)
+            end 
+        end
+    end
+    return predictions 
+end
+
+
+function me_fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, group_id_train::CategoricalVector, group_id_newdata::CategoricalVector, inprocess::Function, SF::Array{String}, postprocess::Function=id_post, c::Real=0.1, SFpost::String="0")
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SF])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SF])) == false
+        error("SF must have just 1 or 0 values.")
+    end
+    if all(x -> x == 0 || x == 1 || x == 1.0 || x == 0.0, ytrain) == false && all(x -> x == -1 || x == 1 || x == -1.0 || x == 1.0, ytrain) == false
+        error("ytrain must have just 1 and 0 values or 1 and -1 values.")
+    end
+    if SFpost == "0"
+        SFpost = SF
+    end
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpost])) == false
+        error("SFpost must have just 1 or 0 values.")
+    end
+    c = abs(c)
+    prob_train, prob_newdata  = inprocess(xtrain, ytrain, newdata, SF, c, group_id_train, group_id_newdata)
+    predictions = postprocess(prob_train,prob_newdata,xtrain,ytrain,newdata,SFpost)
+    return predictions 
+end
+
+
 
 
 
@@ -2192,132 +2383,6 @@ function disparate_mistreatment_metric(newdata, ynewdata, predictions, SF)
 
     DM_Metric = (abs(fnr1-fnr0) + abs(fpr1-fpr0))/2
     return DM_Metric 
-end
-
-
-
-
-
-#Prediction functions
-function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inprocess, SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1,  R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SF])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SF])) == false
-        error("SF must have just 1 or 0 values.")
-    end
-    if all(x -> x == 0 || x == 1 || x == 1.0 || x == 0.0, ytrain) == false && all(x -> x == -1 || x == 1 || x == -1.0 || x == 1.0, ytrain) == false
-        error("ytrain must have just 1 and 0 values or 1 and -1 values.")
-    end
-    if SFpost == "0"
-        SFpost = SF
-    end
-    if SFpre == "0"
-        SFpre = SF
-    end
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpost])) == false
-        error("SFpost must have just 1 or 0 values.")
-    end
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpre])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpre])) == false
-        error("SFpre must have just 1 or 0 values.")
-    end
-    c = abs(c)
-    if R == 1
-        xtrain, ytrain, newdata = preprocess(xtrain, ytrain, newdata, SFpre, c, seed)
-        if isa(inprocess, Function) == false
-            ytrain = categorical([y == 1 ? 1 : 0 for y in ytrain])
-            model = inprocess
-            mach = machine(model, xtrain, ytrain)
-            MLJ.fit!(mach)
-            prob_train = MLJ.predict(mach, xtrain)
-            prob_newdata = MLJ.predict(mach, newdata)
-            if typeof(prob_train[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
-                prob_train =  broadcast(pdf, prob_train, 1)
-                prob_newdata =  broadcast(pdf, prob_newdata, 1)
-            else
-                prob_train = levelcode.(prob_train)
-                prob_newdata = levelcode.(prob_newdata)
-                prob_train = [y == 1 ? 1 : 0 for y in prob_train]
-                prob_newdata = [y == 1 ? 1 : 0 for y in prob_newdata]
-            end
-        else
-            prob_train,prob_newdata = inprocess(xtrain, ytrain, newdata, SF, c)
-        end
-        predictions = postprocess(prob_train,prob_newdata,xtrain,ytrain,newdata,SFpost)
-    else
-        DI_Metric1_old = 2
-        sed = abs.(rand(MersenneTwister(seed), Int, R))
-        for l = 1 : R
-            xtrain3, ytrain3, newdata3 = preprocess(xtrain, ytrain, newdata, SFpre, c, sed[l]) 
-            if isa(inprocess, Function) == false
-                ytrain3 = categorical([y == 1 ? 1 : 0 for y in ytrain3])
-                model = inprocess
-                mach = machine(model, xtrain3, ytrain3)
-                MLJ.fit!(mach)
-                prob_train3 = MLJ.predict(mach, xtrain3)
-                prob_train = MLJ.predict(mach, xtrain)
-                if typeof(prob_train3[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
-                    prob_train3 =  broadcast(pdf, prob_train3, 1)
-                    prob_train =  broadcast(pdf, prob_train, 1)
-                else
-                    prob_train3 = levelcode.(prob_train3)
-                    prob_train = levelcode.(prob_train)
-                    prob_train3 = [y == 1 ? 1 : 0 for y in prob_train3]
-                    prob_train = [y == 1 ? 1 : 0 for y in prob_train]
-                end
-            else
-                prob_train3, prob_train = inprocess(xtrain3, ytrain3, xtrain, SF, c)
-            end
-            predictions_Train = postprocess(prob_train3,prob_train,xtrain3,ytrain3,xtrain,SFpost)
-            #if isa(inprocess, Function) == false && any(xtrain3[:, 1] .== 1.0) && any(xtrain3[:, end] .== 1.0)
-            #    select!(xtrain3,Not([:Intercept]))
-            #end
-            DI_Metric1 = disparate_impact_metric(xtrain, predictions_Train, SFpre)
-            #if isa(inprocess, Function) == false && any(xtrain[:, 1] .== 1.0) && any(xtrain[:, end] .== 1.0)
-            #    select!(xtrain,Not([:Intercept]))
-            #end
-            if DI_Metric1 < DI_Metric1_old
-                DI_Metric1_old = copy(DI_Metric1)
-                if isa(inprocess, Function) == false
-                    ytrain3 = categorical([y == 1 ? 1 : 0 for y in ytrain3])
-                    model = inprocess
-                    mach = machine(model, xtrain3, ytrain3)
-                    MLJ.fit!(mach)
-                    prob_train = MLJ.predict(mach, xtrain3)
-                    prob_newdata = MLJ.predict(mach, newdata3)
-                    if typeof(prob_train[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
-                        prob_train =  broadcast(pdf, prob_train, 1)
-                        prob_newdata =  broadcast(pdf, prob_newdata, 1)
-                    else
-                        prob_train = levelcode.(prob_train)
-                        prob_newdata = levelcode.(prob_newdata)
-                        prob_train = [y == 1 ? 1 : 0 for y in prob_train]
-                        prob_newdata = [y == 1 ? 1 : 0 for y in prob_newdata]
-                    end
-                else
-                    prob_train,prob_newdata = inprocess(xtrain3, ytrain3, newdata3, SF, c)
-                end
-                predictions = postprocess(prob_train,prob_newdata,xtrain3,ytrain3,newdata3,SFpost)
-            end 
-        end
-    end
-    return predictions 
-end
-
-function me_fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, group_id_train::CategoricalVector, group_id_newdata::CategoricalVector, inprocess::Function, SF::Array{String}, postprocess::Function=id_post, c::Real=0.1, SFpost::String="0")
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SF])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SF])) == false
-        error("SF must have just 1 or 0 values.")
-    end
-    if all(x -> x == 0 || x == 1 || x == 1.0 || x == 0.0, ytrain) == false && all(x -> x == -1 || x == 1 || x == -1.0 || x == 1.0, ytrain) == false
-        error("ytrain must have just 1 and 0 values or 1 and -1 values.")
-    end
-    if SFpost == "0"
-        SFpost = SF
-    end
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpost])) == false
-        error("SFpost must have just 1 or 0 values.")
-    end
-    c = abs(c)
-    prob_train, prob_newdata  = inprocess(xtrain, ytrain, newdata, SF, c, group_id_train, group_id_newdata)
-    predictions = postprocess(prob_train,prob_newdata,xtrain,ytrain,newdata,SFpost)
-    return predictions 
 end
 
 
