@@ -46,7 +46,10 @@ export me_fair_pred
 
 
 """
-###Data generator
+### Data generator
+A synthetic dataset generation functions if the user wish to generate any for their own use.
+
+
     (xtrain, ytrain, newdata, ynewdata) = create_data(num_points::Int64, split::Float64, 
                                                       predictors::Array{Float64}, model::String, 
                                                       nSF::Int64, seed::Int64)  
@@ -120,12 +123,15 @@ end
 
 
 """
-###Prediction functions for regular models...
+###Prediction functions 
+The package's core functionality, a functions that unifies preprocessing, in-processing and post-processing phases into a single, user-friendly interface.
+
+### For regular models...
     predictions = fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, inprocess::Function, 
                             SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1, 
                             R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
 
-###and for mixed models
+### and for mixed models
     predictions = me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, group_id_train::CategoricalVector, 
                                group_id_newdata::CategoricalVector, inprocess::Function, SF::Array{String}, postprocess::Function=id_post, 
                                c::Real=0.1, SFpost::String="0")
