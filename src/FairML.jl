@@ -131,6 +131,7 @@ The package's core functionality, a functions that unifies preprocessing, in-pro
                             SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1, 
                             R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
 
+
 ### and for mixed models
     predictions = me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, group_id_train::CategoricalVector, 
                                group_id_newdata::CategoricalVector, inprocess::Function, SF::Array{String}, postprocess::Function=id_post, 
@@ -307,14 +308,14 @@ Functions that preprocess the data. The id_pre() function does not modify the da
 * `newdata`: The new dataset for which we want to obtain the `predictions`;
 * `SFpre`: One sensitive features (variable name), that will act in the preprocessing phase;
 * `c`: The threshold of the fair optimization problems;
-* `seed`: For sample selection;
+* `seed`: For sample selection.
 
 
 #### Output arguments
 
 * `xtrain`: New training set, after the resampling method (when preprocessing diferent from id_pre());
 * `ytrain`: New training set labels, after the resampling method (when preprocessing diferent from id_pre());
-* `newdata`: It remains unchanged during the pre-processing phase;
+* `newdata`: It remains unchanged during the pre-processing phase.
 """
 function id_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     return xtrain, ytrain, newdata
@@ -372,6 +373,7 @@ and for mixed models prediction
 
     (prob_train, prob_newdata) = inprocess(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, SF::Union{String, Array{String}}, 
                                            c::Real, group_id_train::CategoricalVector, group_id_newdata::CategoricalVector)
+
 
 
 #### Input arguments
@@ -2051,7 +2053,7 @@ The post-processing phase of this package is an algorithm that seeks an optimal 
 #### Input arguments
 
 * `prob_train`: The probability vector of the points being classified as positive, for the points in the training set;
-* `prob_newdata`: The probability vector of the points being classified as positive, for the points in the new data.
+* `prob_newdata`: The probability vector of the points being classified as positive, for the points in the new data;
 * `xtrain`: The dataset that the labels are known (training set);
 * `ytrain`: The labels of the dataset `xtrain`;
 * `newdata`: The new dataset for which we want to obtain the `predictions`;
@@ -2486,7 +2488,7 @@ Final metrics comparing the predictions with the true labels of the test set.
 
 #### Input arguments
 
-* `ynewdata`: The labels of the dataset `newdata`.
+* `ynewdata`: The labels of the dataset `newdata`;
 * `predictions`: Classification of the `newdata` points.
 
 
@@ -2501,7 +2503,7 @@ Final metrics comparing the predictions with the true labels of the test set.
 * `TP`: True postive;
 * `FP`: False positive;
 * `TN`: True negative;
-* `FN`: False negative;
+* `FN`: False negative.
 """
 function final_metrics(ynewdata, predictions)    
     ynewdata = [y == 1 ? 1 : 0 for y in ynewdata] 
