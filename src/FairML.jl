@@ -145,7 +145,7 @@ The package's core functionality, a functions that unifies preprocessing, in-pro
 * `ytrain`: The labels of the dataset `xtrain`;
 * `newdata`: The new dataset for which we want to obtain the `predictions`;
 * `inprocess`: One of the several optimization problems availables in this package or any machine learning classification method present in MLJ.jl package;
-* `SF`: One or a set of sensitive features (variables names), that will act in the in-processing phase. 
+* `SF`: One or a set of sensitive features (variables names. E.g Sex, race...), that will act in the in-processing phase. 
         If the algorithm come from the MLJ.jl package, no fair constraint are acting in this phase;
 * `group_id_train`: Training set group category;
 * `group_id_newdata`: New dataset group category.
@@ -2295,25 +2295,30 @@ end
 
 
 
-#Fair Metrics
-function final_metrics(ynewdata, predictions)    
-    ynewdata = [y == 1 ? 1 : 0 for y in ynewdata] 
-    predictions = [y == 1 ? 1 : 0 for y in predictions]
-    cm1 = EvalMetrics.ConfusionMatrix(ynewdata, predictions)
-    ac = EvalMetrics.accuracy(cm1)
-    fpr = EvalMetrics.false_positive_rate(cm1)
-    fnr = EvalMetrics.false_negative_rate(cm1)
-    tpr = EvalMetrics.true_positive_rate(cm1)
-    tnr = EvalMetrics.true_negative_rate(cm1)
-    rc = EvalMetrics.recall(cm1)
-    TP = EvalMetrics.true_positive(cm1)
-    FP = EvalMetrics.false_positive(cm1)
-    TN = EvalMetrics.true_negative(cm1)
-    FN = EvalMetrics.false_negative(cm1)
+"""
+### Fair Metrics
+Since the package provides the option to generate synthetic datasets for users to test any algorithms they have developed, 
+some auxiliary functions will help in this journey. Below is the documentation of functions that calculate and compare both fairness and 
+regular metrics of a prediction with the original data labels.
 
-    return ac, fpr, fnr, tpr, tnr, rc, TP, FP, TN, FN
-end
+    fairness_metric = fairness_metrics(newdata::DataFrame, ynewdata::Vector{Union{Float64, Int64}}, predictions::Vector{Union{Float64, Int64}}, SF::String)
 
+
+#### Input arguments
+
+* `newdata`: The new dataset for which we want to obtain the `predictions`;
+* `ynewdata`: The labels of the dataset `newdata`;
+* `predictions`: Classification of the `newdata` points;
+* `SF`: One or a set of sensitive features (variables names), that will act in the in-processing phase. 
+
+
+#### Output arguments
+
+* `fairness_metric`: Fairness metric value from provided data of a especific sensitive feature.
+
+
+All possible fair metrics options are below.
+"""
 function disparate_impact_metric(newdata, predictions, SF)
     newdata2 = copy(newdata)
     if any(newdata2[:, 1] .!= 1.0) && any(newdata2[:, end] .!= 1.0)
@@ -2470,6 +2475,51 @@ function disparate_mistreatment_metric(newdata, ynewdata, predictions, SF)
     return DM_Metric 
 end
 
+
+
+"""
+### Final Metrics
+Final metrics comparing the predictions with the true labels of the test set.
+
+    (ac, fpr, fnr, tpr, tnr, rc, TP, FP, TN, FN) = final_metrics(ynewdata::Vector{Union{Float64,Int64}}, predictions::Vector{Union{Float64, Int64}})
+
+
+#### Input arguments
+
+* `ynewdata`: The labels of the dataset `newdata`.
+* `predictions`: Classification of the `newdata` points.
+
+
+#### Output arguments
+
+* `ac`: Accuracy;
+* `fpr`: False positive rate;
+* `fnr`: False negative rate;
+* `tpr`: True positive rate;;
+* `tnr`: True negative rate;;
+* `rc`: Recall;
+* `TP`: True postive;
+* `FP`: False positive;
+* `TN`: True negative;
+* `FN`: False negative;
+"""
+function final_metrics(ynewdata, predictions)    
+    ynewdata = [y == 1 ? 1 : 0 for y in ynewdata] 
+    predictions = [y == 1 ? 1 : 0 for y in predictions]
+    cm1 = EvalMetrics.ConfusionMatrix(ynewdata, predictions)
+    ac = EvalMetrics.accuracy(cm1)
+    fpr = EvalMetrics.false_positive_rate(cm1)
+    fnr = EvalMetrics.false_negative_rate(cm1)
+    tpr = EvalMetrics.true_positive_rate(cm1)
+    tnr = EvalMetrics.true_negative_rate(cm1)
+    rc = EvalMetrics.recall(cm1)
+    TP = EvalMetrics.true_positive(cm1)
+    FP = EvalMetrics.false_positive(cm1)
+    TN = EvalMetrics.true_negative(cm1)
+    FN = EvalMetrics.false_negative(cm1)
+
+    return ac, fpr, fnr, tpr, tnr, rc, TP, FP, TN, FN
+end
 
 
 
