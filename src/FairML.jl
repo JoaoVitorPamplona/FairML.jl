@@ -326,15 +326,16 @@ function di_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     if c == 0
         c = 0.01
     end
-    Data = hcat(xtrain, ytrain)
+    Datay = DataFrame([Matrix(xtrain) ytrain], :auto)
 
-    gb = groupby(Data, SFpre)
-    c1 = countmap(gb[1].x1)
-    c2 = countmap(gb[2].x1)
+    gb = groupby(Datay, SFpre)
+    c1 = countmap(gb[1][:,end])
+    c2 = countmap(gb[2][:,end])
     mm = minimum(vcat(collect(values(c1)), collect(values(c2))))
 
-    gb11 = groupby(gb[1], :x1)
-    gb12 = groupby(gb[2], :x1)
+    lastname = names(Datay)[end]
+    gb11 = groupby(gb[1], lastname)
+    gb12 = groupby(gb[2], lastname)
 
     gb1 = gb11[1]
     gb2 = gb11[2]
@@ -352,9 +353,9 @@ function di_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     df_sampled4 = gb4[selected_indices4, :]
 
 
-    ND = shuffle(MersenneTwister(seed), vcat(df_sampled1, df_sampled2, df_sampled3, df_sampled4))
-    xtrainF = ND[:,1:end-1]
-    ytrainF = ND[:,end]
+    NewData = shuffle(MersenneTwister(seed), vcat(df_sampled1, df_sampled2, df_sampled3, df_sampled4))
+    xtrainF = NewData[:,1:end-1]
+    ytrainF = NewData[:,end]
     return xtrainF, ytrainF, newdata
 end
 
