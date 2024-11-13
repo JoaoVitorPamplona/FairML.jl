@@ -38,9 +38,9 @@ The complete package documentation can be found in the paper [FairML: A Julia pa
 
 
 
-# EXAMPLE
+## EXAMPLE
 
-## For functions within the package:
+### For functions within the package:
 ```julia
 xtrain,ytrain,newdata,ynewdata = create_data(100000, 0.01, [-2;0.4;0.8;0.5;3], "Logistic", 1, 42)
 predictions = fair_pred(xtrain, ytrain, newdata, di_logreg, ["x4"], id_pre, di_post, 0.1, 1, 42)
@@ -49,7 +49,7 @@ FM = disparate_impact_metric(newdata, predictions, ["x4"])
 ```
 
 
-## For functions of the MLJ.jl package:
+### For functions of the MLJ.jl package:
 ```julia
 xtrain2,ytrain2,newdata2,ynewdata2 = create_data(100000, 0.01, [-2;0.4;0.8;0.5;3], "Linear", 1, 42)
 predictions2 = fair_pred(xtrain2, ytrain2, newdata2, RandomForestClassifier(), ["x4"], di_pre, di_post, 0.1, 5, 42)
