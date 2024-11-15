@@ -266,6 +266,12 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
             end 
         end
     end
+    if all(x -> x == 1, xtrain[:, 1])
+        select!(xtrain, Not(names(xtrain)[1]))
+    end
+    if all(x -> x == 1, newdata[:, 1])
+        select!(newdata, Not(names(newdata)[1]))
+    end
     return predictions 
 end
 
@@ -286,6 +292,13 @@ function me_fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, gro
     c = abs(c)
     prob_train, prob_newdata  = inprocess(xtrain, ytrain, newdata, SF, c, group_id_train, group_id_newdata)
     predictions = postprocess(prob_train,prob_newdata,xtrain,ytrain,newdata,SFpost)
+
+    if all(x -> x == 1, xtrain[:, 1])
+        select!(xtrain, Not(names(xtrain)[1]))
+    end
+    if all(x -> x == 1, newdata[:, 1])
+        select!(newdata, Not(names(newdata)[1]))
+    end
     return predictions 
 end
 
@@ -326,7 +339,8 @@ function di_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     if c == 0
         c = 0.01
     end
-    Datay = DataFrame([Matrix(xtrain) ytrain], :auto)
+    Datay = copy(xtrain)
+    Datay[!, :target] = ytrain
 
     gb = groupby(Datay, SFpre)
     c1 = countmap(gb[1][:,end])
@@ -358,7 +372,6 @@ function di_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     ytrainF = NewData[:,end]
     return xtrainF, ytrainF, newdata
 end
-
 
 
 
