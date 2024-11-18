@@ -167,8 +167,10 @@ The package's core functionality, a functions that unifies preprocessing, in-pro
 
 * `predictions`: Classification of the `newdata` points.
 """
-function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inprocess, SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1,  R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SF])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SF])) == false
+function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inprocess, SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1, R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
+    a1, b1 = size(xtrain)
+    a2, b2 = size(newdata)
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SF])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SF])) == false
         error("SF must have just 1 or 0 values.")
     end
     if all(x -> x == 0 || x == 1 || x == 1.0 || x == 0.0, ytrain) == false && all(x -> x == -1 || x == 1 || x == -1.0 || x == 1.0, ytrain) == false
@@ -180,10 +182,10 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
     if SFpre == "0"
         SFpre = SF
     end
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpost])) == false
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SFpost])) == false
         error("SFpost must have just 1 or 0 values.")
     end
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpre])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpre])) == false
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SFpre])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SFpre])) == false
         error("SFpre must have just 1 or 0 values.")
     end
     c = abs(c)
@@ -196,9 +198,9 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
             MLJ.fit!(mach)
             prob_train = MLJ.predict(mach, xtrain)
             prob_newdata = MLJ.predict(mach, newdata)
-            if typeof(prob_train[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
-                prob_train =  broadcast(pdf, prob_train, 1)
-                prob_newdata =  broadcast(pdf, prob_newdata, 1)
+            if typeof(prob_train[1]) == UnivariateFinite{Multiclass{2},Int64,UInt32,Float64}
+                prob_train = broadcast(pdf, prob_train, 1)
+                prob_newdata = broadcast(pdf, prob_newdata, 1)
             else
                 prob_train = levelcode.(prob_train)
                 prob_newdata = levelcode.(prob_newdata)
@@ -206,14 +208,14 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
                 prob_newdata = [y == 1 ? 1 : 0 for y in prob_newdata]
             end
         else
-            prob_train,prob_newdata = inprocess(xtrain, ytrain, newdata, SF, c)
+            prob_train, prob_newdata = inprocess(xtrain, ytrain, newdata, SF, c)
         end
-        predictions = postprocess(prob_train,prob_newdata,xtrain,ytrain,newdata,SFpost)
+        predictions = postprocess(prob_train, prob_newdata, xtrain, ytrain, newdata, SFpost)
     else
         DI_Metric1_old = 2
         sed = abs.(rand(MersenneTwister(seed), Int, R))
-        for l = 1 : R
-            xtrain3, ytrain3, newdata3 = preprocess(xtrain, ytrain, newdata, SFpre, c, sed[l]) 
+        for l = 1:R
+            xtrain3, ytrain3, newdata3 = preprocess(xtrain, ytrain, newdata, SFpre, c, sed[l])
             if isa(inprocess, Function) == false
                 ytrain3 = categorical([y == 1 ? 1 : 0 for y in ytrain3])
                 model = inprocess
@@ -221,9 +223,9 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
                 MLJ.fit!(mach)
                 prob_train3 = MLJ.predict(mach, xtrain3)
                 prob_train = MLJ.predict(mach, xtrain)
-                if typeof(prob_train3[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
-                    prob_train3 =  broadcast(pdf, prob_train3, 1)
-                    prob_train =  broadcast(pdf, prob_train, 1)
+                if typeof(prob_train3[1]) == UnivariateFinite{Multiclass{2},Int64,UInt32,Float64}
+                    prob_train3 = broadcast(pdf, prob_train3, 1)
+                    prob_train = broadcast(pdf, prob_train, 1)
                 else
                     prob_train3 = levelcode.(prob_train3)
                     prob_train = levelcode.(prob_train)
@@ -233,7 +235,7 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
             else
                 prob_train3, prob_train = inprocess(xtrain3, ytrain3, xtrain, SF, c)
             end
-            predictions_Train = postprocess(prob_train3,prob_train,xtrain3,ytrain3,xtrain,SFpost)
+            predictions_Train = postprocess(prob_train3, prob_train, xtrain3, ytrain3, xtrain, SFpost)
             #if isa(inprocess, Function) == false && any(xtrain3[:, 1] .== 1.0) && any(xtrain3[:, end] .== 1.0)
             #    select!(xtrain3,Not([:Intercept]))
             #end
@@ -250,9 +252,9 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
                     MLJ.fit!(mach)
                     prob_train = MLJ.predict(mach, xtrain3)
                     prob_newdata = MLJ.predict(mach, newdata3)
-                    if typeof(prob_train[1]) == UnivariateFinite{Multiclass{2}, Int64, UInt32, Float64}
-                        prob_train =  broadcast(pdf, prob_train, 1)
-                        prob_newdata =  broadcast(pdf, prob_newdata, 1)
+                    if typeof(prob_train[1]) == UnivariateFinite{Multiclass{2},Int64,UInt32,Float64}
+                        prob_train = broadcast(pdf, prob_train, 1)
+                        prob_newdata = broadcast(pdf, prob_newdata, 1)
                     else
                         prob_train = levelcode.(prob_train)
                         prob_newdata = levelcode.(prob_newdata)
@@ -260,24 +262,28 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
                         prob_newdata = [y == 1 ? 1 : 0 for y in prob_newdata]
                     end
                 else
-                    prob_train,prob_newdata = inprocess(xtrain3, ytrain3, newdata3, SF, c)
+                    prob_train, prob_newdata = inprocess(xtrain3, ytrain3, newdata3, SF, c)
                 end
-                predictions = postprocess(prob_train,prob_newdata,xtrain3,ytrain3,newdata3,SFpost)
-            end 
+                predictions = postprocess(prob_train, prob_newdata, xtrain3, ytrain3, newdata3, SFpost)
+            end
         end
     end
-    if all(x -> x == 1, xtrain[:, 1])
+    a12, b12 = size(xtrain)
+    a22, b22 = size(newdata)
+    if all(x -> x == 1, xtrain[:, 1]) && b12 != b1
         select!(xtrain, Not(names(xtrain)[1]))
     end
-    if all(x -> x == 1, newdata[:, 1])
+    if all(x -> x == 1, newdata[:, 1]) && b22 != b2
         select!(newdata, Not(names(newdata)[1]))
     end
-    return predictions 
+    return predictions
 end
 
 
 function me_fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, group_id_train::CategoricalVector, group_id_newdata::CategoricalVector, inprocess::Function, SF::Array{String}, postprocess::Function=id_post, c::Real=0.1, SFpost::String="0")
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SF])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SF])) == false
+    a1, b1 = size(xtrain)
+    a2, b2 = size(newdata)
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SF])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SF])) == false
         error("SF must have just 1 or 0 values.")
     end
     if all(x -> x == 0 || x == 1 || x == 1.0 || x == 0.0, ytrain) == false && all(x -> x == -1 || x == 1 || x == -1.0 || x == 1.0, ytrain) == false
@@ -286,20 +292,22 @@ function me_fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, gro
     if SFpost == "0"
         SFpost = SF
     end
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!,SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!,SFpost])) == false
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SFpost])) == false
         error("SFpost must have just 1 or 0 values.")
     end
     c = abs(c)
-    prob_train, prob_newdata  = inprocess(xtrain, ytrain, newdata, SF, c, group_id_train, group_id_newdata)
-    predictions = postprocess(prob_train,prob_newdata,xtrain,ytrain,newdata,SFpost)
+    prob_train, prob_newdata = inprocess(xtrain, ytrain, newdata, SF, c, group_id_train, group_id_newdata)
+    predictions = postprocess(prob_train, prob_newdata, xtrain, ytrain, newdata, SFpost)
 
-    if all(x -> x == 1, xtrain[:, 1])
+    a12, b12 = size(xtrain)
+    a22, b22 = size(newdata)
+    if all(x -> x == 1, xtrain[:, 1]) && b12 != b1
         select!(xtrain, Not(names(xtrain)[1]))
     end
-    if all(x -> x == 1, newdata[:, 1])
+    if all(x -> x == 1, newdata[:, 1]) && b22 != b2
         select!(newdata, Not(names(newdata)[1]))
     end
-    return predictions 
+    return predictions
 end
 
 
