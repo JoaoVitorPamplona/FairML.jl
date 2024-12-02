@@ -5,6 +5,7 @@ using SparseArrays, JLD, MLJ, BenchmarkTools, EvalMetrics, CategoricalArrays, Mi
 export create_data
 export id_pre
 export di_pre
+export dm_pre
 export id_logreg
 export di_logreg
 export fnr_logreg
@@ -127,13 +128,13 @@ end
 The package's core functionality, a functions that unifies preprocessing, in-processing and post-processing phases into a single, user-friendly interface.
 
 ### For regular models...
-    predictions = fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, inprocess::Function, 
+    classifications = fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, inprocess::Function, 
                             SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1, 
                             R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
 
 
 ### and for mixed models
-    predictions = me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, group_id_train::CategoricalVector, 
+    classifications = me_fair_pred(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, group_id_train::CategoricalVector, 
                                group_id_newdata::CategoricalVector, inprocess::Function, SF::Array{String}, postprocess::Function=id_post, 
                                c::Real=0.1, SFpost::String="0")
 
@@ -144,7 +145,7 @@ The package's core functionality, a functions that unifies preprocessing, in-pro
 
 * `xtrain`: The dataset that the labels are known (training set);
 * `ytrain`: The labels of the dataset `xtrain`;
-* `newdata`: The new dataset for which we want to obtain the `predictions`;
+* `newdata`: The new dataset for which we want to obtain the `classifications`;
 * `inprocess`: One of the several optimization problems availables in this package or any machine learning classification method present in MLJ.jl package;
 * `SF`: One or a set of sensitive features (variables names. E.g Sex, race...), that will act in the in-processing phase. 
         If the algorithm come from the MLJ.jl package, no fair constraint are acting in this phase;
@@ -165,7 +166,7 @@ The package's core functionality, a functions that unifies preprocessing, in-pro
 
 #### Output arguments
 
-* `predictions`: Classification of the `newdata` points.
+* `classifications`: Classification of the `newdata` points.
 """
 function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inprocess, SF::Array{String}, preprocess::Function=id_pre, postprocess::Function=id_post, c::Real=0.1, R::Int64=1, seed::Int64=42, SFpre::String="0", SFpost::String="0")
     a1, b1 = size(xtrain)
@@ -182,10 +183,13 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
     if SFpre == "0"
         SFpre = SF
     end
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SFpost])) == false
+    if preprocess == id_pre
+        R = 1
+    end
+    if all(x -> x == 0 || x == 1, xtrain[!, SFpost]) == false && all(x -> x == 0.0 || x == 1.0, xtrain[!, SFpost]) == false
         error("SFpost must have just 1 or 0 values.")
     end
-    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SFpre])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SFpre])) == false
+    if all(x -> x == 0 || x == 1, xtrain[!, SFpre]) == false && all(x -> x == 0.0 || x == 1.0, xtrain[!, SFpre]) == false
         error("SFpre must have just 1 or 0 values.")
     end
     c = abs(c)
@@ -236,13 +240,11 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
                 prob_train3, prob_train = inprocess(xtrain3, ytrain3, xtrain, SF, c)
             end
             predictions_Train = postprocess(prob_train3, prob_train, xtrain3, ytrain3, xtrain, SFpost)
-            #if isa(inprocess, Function) == false && any(xtrain3[:, 1] .== 1.0) && any(xtrain3[:, end] .== 1.0)
-            #    select!(xtrain3,Not([:Intercept]))
-            #end
-            DI_Metric1 = disparate_impact_metric(xtrain, predictions_Train, SFpre)
-            #if isa(inprocess, Function) == false && any(xtrain[:, 1] .== 1.0) && any(xtrain[:, end] .== 1.0)
-            #    select!(xtrain,Not([:Intercept]))
-            #end
+            if preprocess == dm_pre
+                DI_Metric1 = disparate_mistreatment_metric(xtrain, ytrain, predictions_Train, SFpre)
+            elseif preprocess == di_pre
+                DI_Metric1 = disparate_impact_metric(xtrain, predictions_Train, SFpre)
+            end
             if DI_Metric1 < DI_Metric1_old
                 DI_Metric1_old = copy(DI_Metric1)
                 if isa(inprocess, Function) == false
@@ -276,7 +278,8 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
     if all(x -> x == 1, newdata[:, 1]) && b22 != b2
         select!(newdata, Not(names(newdata)[1]))
     end
-    return predictions
+    classifications = copy(predictions)
+    return classifications
 end
 
 
@@ -313,13 +316,12 @@ end
 
 
 
-
 """
 ### Preprocessing phase
-Functions that preprocess the data. The id_pre() function does not modify the data in any way and is used by default. The di_pre() function forces the data to be free of disparate impact.
+Functions that preprocess the data. The id_pre() and me_id_pre() functions does not modify the data in any way and is used by default.
 
+### For regular models we have:
     (xtrain, ytrain, newdata) = preprocess(xtrain::DataFrame, ytrain::Vector{Union{Float64, Int64}}, newdata::DataFrame, SFpre::String, c::Real, seed::Int64)
-
 
 
 #### Input arguments
@@ -338,6 +340,7 @@ Functions that preprocess the data. The id_pre() function does not modify the da
 * `ytrain`: New training set labels, after the resampling method (when preprocessing diferent from id_pre());
 * `newdata`: It remains unchanged during the pre-processing phase.
 """
+
 function id_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     return xtrain, ytrain, newdata
 end
@@ -380,6 +383,47 @@ function di_pre(xtrain, ytrain, newdata, SFpre, c, seed)
     ytrainF = NewData[:,end]
     return xtrainF, ytrainF, newdata
 end
+
+
+function dm_pre(xtrain, ytrain, newdata, SFpre, c, seed)
+    if c == 0
+        c = 0.01
+    end
+    Datay = copy(xtrain)
+    Datay[!, :target] = ytrain
+
+    gb = groupby(Datay, SFpre)
+    c1 = countmap(gb[1][:,end])
+    c2 = countmap(gb[2][:,end])
+    mm = minimum(vcat(collect(values(c1)), collect(values(c2))))
+
+    lastname = names(Datay)[end]
+    gb11 = groupby(gb[1], lastname)
+    gb12 = groupby(gb[2], lastname)
+
+    gb1 = gb11[1]
+    gb2 = gb11[2]
+    gb3 = gb12[1]
+    gb4 = gb12[2]
+
+    selected_indices1 = sample(MersenneTwister(seed), 1:nrow(gb1), mm, replace=true)
+    selected_indices2 = sample(MersenneTwister(seed), 1:nrow(gb2), mm, replace=true)
+    selected_indices3 = sample(MersenneTwister(seed), 1:nrow(gb3), mm, replace=true)
+    selected_indices4 = sample(MersenneTwister(seed), 1:nrow(gb4), mm, replace=true)
+
+    df_sampled1 = gb1[selected_indices1, :]
+    df_sampled2 = gb2[selected_indices2, :]
+    df_sampled3 = gb3[selected_indices3, :]
+    df_sampled4 = gb4[selected_indices4, :]
+
+
+    NewData = shuffle(MersenneTwister(seed), vcat(df_sampled1, df_sampled2, df_sampled3, df_sampled4))
+    xtrainF = NewData[:,1:end-1]
+    ytrainF = NewData[:,end]
+    return xtrainF, ytrainF, newdata
+end
+
+
 
 
 
