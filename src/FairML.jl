@@ -217,8 +217,8 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
         predictions = postprocess(prob_train, prob_newdata, xtrain, ytrain, newdata, SFpost)
     else
         DI_Metric1_old = 2
-        sed = abs.(rand(MersenneTwister(seed), Int, R))
-        for l = 1:R
+        sed = collect(1:R)
+        for l = 1 : R
             xtrain3, ytrain3, newdata3 = preprocess(xtrain, ytrain, newdata, SFpre, c, sed[l])
             if isa(inprocess, Function) == false
                 ytrain3 = categorical([y == 1 ? 1 : 0 for y in ytrain3])
