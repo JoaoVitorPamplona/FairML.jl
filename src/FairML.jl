@@ -186,10 +186,10 @@ function fair_pred(xtrain::DataFrame, ytrain::Vector, newdata::DataFrame, inproc
     if preprocess == id_pre
         R = 1
     end
-    if all(x -> x == 0 || x == 1, xtrain[!, SFpost]) == false && all(x -> x == 0.0 || x == 1.0, xtrain[!, SFpost]) == false
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SFpost])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SFpost])) == false
         error("SFpost must have just 1 or 0 values.")
     end
-    if all(x -> x == 0 || x == 1, xtrain[!, SFpre]) == false && all(x -> x == 0.0 || x == 1.0, xtrain[!, SFpre]) == false
+    if all(x -> x == 0 || x == 1, Matrix(xtrain[!, SFpre])) == false && all(x -> x == 0.0 || x == 1.0, Matrix(xtrain[!, SFpre])) == false
         error("SFpre must have just 1 or 0 values.")
     end
     c = abs(c)
