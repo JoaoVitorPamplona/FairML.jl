@@ -63,13 +63,11 @@ FM2 = disparate_impact_metric(newdata, predictions2, ["x4"])
 
 If you use this project in your work, please cite it as follows:
 ```bibtex
-@misc{burgard2024fairmljuliapackagefair,
-      title={FairML: A Julia Package for Fair Classification}, 
-      author={Jan Pablo Burgard and João Vitor Pamplona},
-      year={2024},
-      eprint={2412.01585},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2412.01585}, 
+@article{BP2025fairml,
+  author    = {Jan Pablo Burgard and João Vitor Pamplona},
+  title     = {FairML: a Julia package for fair classification},
+  journal   = {International Journal of Data Science and Analytics},
+  year      = {2025},
+  doi       = {10.1007/s41060-025-00793-0}
 }
 ```
